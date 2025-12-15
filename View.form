@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="View">
+  <grid id="27dc6" binding="PainelGeral" layout-manager="BorderLayout" hgap="0" vgap="0">
+    <constraints>
+      <xy x="20" y="20" width="759" height="400"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <grid id="62b5" binding="PainelTopo" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="1">
+        <constraints border-constraint="North"/>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <grid id="ec869" binding="Titulo" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="2">
+            <constraints/>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <component id="54234" class="javax.swing.JLabel" binding="TituloString">
+                <constraints/>
+                <properties>
+                  <font size="24"/>
+                  <text value="PetShop"/>
+                </properties>
+              </component>
+            </children>
+          </grid>
+          <grid id="4ac9" binding="CriaAnimal" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="1">
+            <constraints/>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <component id="11eec" class="javax.swing.JLabel" binding="Nome">
+                <constraints/>
+                <properties>
+                  <text value="Nome"/>
+                </properties>
+              </component>
+              <component id="48445" class="javax.swing.JTextField" binding="NomeAnimal">
+                <constraints/>
+                <properties>
+                  <dropMode value="USE_SELECTION"/>
+                  <editable value="true"/>
+                  <enabled value="true"/>
+                  <font name="Arial" size="12" style="0"/>
+                  <foreground color="-16777216"/>
+                  <minimumSize width="221" height="40"/>
+                  <text value=""/>
+                </properties>
+                <clientProperties>
+                  <caretAspectRatio class="java.lang.Double" value="0.1"/>
+                  <caretWidth class="java.lang.Integer" value="1"/>
+                  <html.disable class="java.lang.Boolean" value="false"/>
+                </clientProperties>
+              </component>
+              <component id="43273" class="javax.swing.JComboBox" binding="SelectAnimal">
+                <constraints/>
+                <properties/>
+              </component>
+              <component id="f092c" class="javax.swing.JButton" binding="Criar">
+                <constraints/>
+                <properties>
+                  <text value="Criar"/>
+                </properties>
+              </component>
+            </children>
+          </grid>
+        </children>
+      </grid>
+      <grid id="5e2fb" binding="PainelCentral" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="1">
+        <constraints border-constraint="Center"/>
+        <properties/>
+        <border type="none"/>
+        <children/>
+      </grid>
+    </children>
+  </grid>
+</form>
