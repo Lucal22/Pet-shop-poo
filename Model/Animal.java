@@ -13,6 +13,11 @@ public abstract class Animal {
         liberado = false;
         especie = e;
     }
+    public Animal(String n){
+        nome = n;
+        liberado = false;
+        especie = "desconhecida";
+    }
 
     public abstract void banho();
 
