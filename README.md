@@ -119,7 +119,7 @@ Para informações detalhadas sobre a implementação dos requisitos do trabalho
 
 ## 👨‍💻 Autor
 
-**Lucas** - [Lucal22](https://github.com/Lucal22)
+**Luís Carlos** - [Lucal22](https://github.com/Lucal22)
 
 ## 📝 Licença
 
