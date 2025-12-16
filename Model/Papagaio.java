@@ -5,7 +5,7 @@ public class Papagaio extends Animal{
         super(n, "Papagaio");
     }
     public void banho(){
-        System.out.println();
+        System.out.println("Papagaio "+getNome()+" tomou banho");
         setBanho(true);
         setLiberado(true);
     }

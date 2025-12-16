@@ -9,7 +9,7 @@ public class Gato extends Animal implements Peludos{
     }
 
     public void tosa(){
-        System.out.println(getNome()+" foi tosado!");
+        System.out.println("Gato "+getNome()+" foi tosado!");
         if(getBanho()){
             setLiberado(true);
         }
@@ -17,7 +17,7 @@ public class Gato extends Animal implements Peludos{
     }
 
     public void banho(){
-        System.out.println(getNome()+" foi tosado!");
+        System.out.println("Gato "+getNome()+" tomou banho!");
         if(tosa){
             setLiberado(true);
         }
