@@ -24,7 +24,6 @@ public class View {
     private static final Color BG_CARD = Color.WHITE;
     private static final Color PRIMARY = new Color(52, 152, 219);
     private static final Color DANGER = new Color(231, 76, 60);
-    private static final Color SUCCESS = new Color(46, 204, 113);
     private static final Font FONT_TITULO = new Font("Segoe UI", Font.BOLD, 14);
     private static final Font FONT_NORMAL = new Font("Segoe UI", Font.PLAIN, 12);
     private static final Dimension CARD_SIZE = new Dimension(180, 150);
