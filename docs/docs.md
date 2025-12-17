@@ -45,11 +45,15 @@ private boolean banho;     // Status do serviço de banho
 private boolean liberado;  // Status de liberação para remoção
 ```
 
+**Construtores**:
+
+- `Animal(String n, String e)`: Construtor principal que recebe nome e espécie
+- `Animal(String e)`: Construtor sobrecarregado que define nome como "Desconhecido"
+
 **Métodos**:
 
 - `abstract void banho()`: Método abstrato que deve ser implementado pelas subclasses
 - Getters e Setters para todos os atributos
-- Construtor que inicializa nome, espécie e define `liberado = false`
 
 **Aplicação de POO**:
 
@@ -67,11 +71,25 @@ private boolean liberado;  // Status de liberação para remoção
 - **Herança**: `extends Animal implements Peludos`
 - **Atributo adicional**: `private boolean tosa`
 
+**Construtores**:
+
+```java
+public Cachorro(String n) {       // Com nome específico
+    super(n, "Cachorro");
+    tosa = false;
+}
+
+public Cachorro() {               // Sem nome (usa "Desconhecido")
+    super("Cachorro");
+    tosa = false;
+}
+```
+
 **Implementação**:
 
 ```java
 public void banho() {
-    System.out.println(getNome() + " tomou banho!");
+    System.out.println("Cachorro " + getNome() + " tomou banho!");
     if(tosa) {
         setLiberado(true);  // Liberado apenas se já foi tosado
     }
@@ -79,7 +97,7 @@ public void banho() {
 }
 
 public void tosa() {
-    System.out.println(getNome() + " foi tosado!");
+    System.out.println("Cachorro " + getNome() + " foi tosado!");
     if(getBanho()) {
         setLiberado(true);  // Liberado apenas se já tomou banho
     }
@@ -95,7 +113,23 @@ public void tosa() {
 
 - **Localização**: `Model/Gato.java`
 - **Herança**: `extends Animal implements Peludos`
-- **Implementação**: Idêntica ao Cachorro (animais peludos compartilham comportamento)
+- **Atributo adicional**: `private boolean tosa`
+
+**Construtores**:
+
+```java
+public Gato(String n) {           // Com nome específico
+    super(n, "Gato");
+    tosa = false;
+}
+
+public Gato() {                   // Sem nome (usa "Desconhecido")
+    super("Gato");
+    tosa = false;
+}
+```
+
+**Implementação**: Comportamento semelhante ao Cachorro (animais peludos compartilham lógica)
 
 **Regra de Negócio**: Gato só é liberado após banho E tosa.
 
@@ -107,11 +141,23 @@ public void tosa() {
 - **Herança**: `extends Animal`
 - **Diferencial**: NÃO implementa a interface `Peludos`
 
+**Construtores**:
+
+```java
+public Papagaio(String n) {       // Com nome específico
+    super(n, "Papagaio");
+}
+
+public Papagaio() {               // Sem nome (usa "Desconhecido")
+    super("Papagaio");
+}
+```
+
 **Implementação**:
 
 ```java
 public void banho() {
-    System.out.println(getNome() + " tomou banho!");
+    System.out.println("Papagaio " + getNome() + " tomou banho");
     setBanho(true);
     setLiberado(true);  // Liberado imediatamente após o banho
 }
@@ -185,34 +231,53 @@ if (a instanceof Cachorro || a instanceof Gato) {
 
 **Classe**: `ControleAnimal.java`
 
+**Atributos**:
+
+- `private ArrayList<Animal> animais`: Lista em memória dos animais carregados
+- `private final String caminho = "animais.csv"`: Caminho do arquivo de persistência
+
 **Métodos Principais**:
 
 1. **`addCSV(Animal a)`**
 
    - Adiciona novo animal ao arquivo CSV
+   - Adiciona o animal à lista em memória (`animais.add(a)`)
    - Gera ID automático incremental
-   - Trata campos específicos de cada tipo
+   - Trata campos específicos de cada tipo (tosa para peludos)
+   - Usa `BufferedWriter` para escrita eficiente
 
 2. **`getAllCSV()`**
 
-   - Lê todos os animais do arquivo
-   - Recria objetos com base na espécie
+   - Limpa a lista em memória (`animais.clear()`)
+   - Lê todos os animais do arquivo CSV
+   - Recria objetos com base na espécie usando `criarAnimal()`
+   - Popula a lista `animais` com os objetos recriados
    - Retorna ArrayList de animais
+   - Usa `BufferedReader` para leitura eficiente
 
-3. **`updateCSV(Animal animalAtualizado)`**
+3. **`updateAnimal(Animal animalAtualizado)`**
 
-   - Atualiza dados de um animal existente
-   - Mantém integridade do arquivo
-   - Lida com BOM e espaços invisíveis
+   - Atualiza o animal na lista em memória
+   - Busca o animal pelo `petID` e substitui na lista
+   - Chama `updateCSV()` para sincronizar com o arquivo
 
-4. **`removerPorID(int idRemover)`**
+4. **`removeAnimal(int idRemover)`**
 
-   - Remove animal do sistema
-   - Reescreve arquivo sem a linha removida
+   - Remove animal da lista em memória pelo `petID`
+   - Exibe mensagem de confirmação da remoção
+   - Chama `updateCSV()` para sincronizar com o arquivo
 
-5. **`getUltimoID()`**
-   - Retorna o último ID usado
-   - Permite geração de IDs únicos
+5. **`updateCSV()` (privado)**
+
+   - Reescreve completamente o arquivo CSV
+   - Itera sobre a lista `animais` em memória
+   - Escreve cabeçalho + todos os animais
+   - Usa `BufferedWriter` com `false` para sobrescrever
+
+6. **`getUltimoID()` (privado)**
+   - Lê a última linha do arquivo CSV
+   - Retorna o último ID usado para geração de novos IDs
+   - Retorna 0 se o arquivo estiver vazio
 
 **Aplicação de POO**:
 
@@ -272,13 +337,33 @@ public abstract class Animal {
     // Atributos comuns
     private String nome;
     private int petID;
+    private String especie;
+    private boolean banho;
+    private boolean liberado;
+
+    // Construtores sobrecarregados
+    public Animal(String n, String e) {    // Com nome específico
+        nome = n;
+        liberado = false;
+        especie = e;
+    }
+
+    public Animal(String e) {              // Nome padrão "Desconhecido"
+        nome = "Desconhecido";
+        liberado = false;
+        especie = e;
+    }
 
     // Método abstrato - contrato para subclasses
     public abstract void banho();
 }
 ```
 
-**Benefício**: Garante que todas as subclasses implementem o comportamento de banho, mas permite implementações específicas.
+**Benefícios**:
+
+- Garante que todas as subclasses implementem o comportamento de banho
+- **Sobrecarga de Construtor**: Oferece flexibilidade na criação de objetos (com ou sem nome)
+- Permite implementações específicas do método abstrato em cada subclasse
 
 ---
 
@@ -341,6 +426,28 @@ public class Cachorro extends Animal implements Peludos {
 
 ### 4. ✅ Polimorfismo
 
+#### Polimorfismo de Sobrecarga
+
+**Construtores sobrecarregados em todas as classes**:
+
+```java
+// Classe Animal
+public Animal(String n, String e) { ... }  // Com nome
+public Animal(String e) { ... }            // Sem nome (padrão)
+
+// Classe Cachorro
+public Cachorro(String n) {                // Com nome específico
+    super(n, "Cachorro");
+    tosa = false;
+}
+public Cachorro() {                        // Sem nome
+    super("Cachorro");
+    tosa = false;
+}
+```
+
+**Benefício**: Permite criar animais com ou sem nome, oferecendo flexibilidade ao desenvolvedor.
+
 #### Polimorfismo de Sobrescrita
 
 **Método `banho()` implementado diferentemente**:
@@ -348,6 +455,7 @@ public class Cachorro extends Animal implements Peludos {
 ```java
 // Em Cachorro/Gato
 public void banho() {
+    System.out.println("Cachorro " + getNome() + " tomou banho!");
     if(tosa) {
         setLiberado(true);  // Só libera se já foi tosado
     }
@@ -356,6 +464,7 @@ public void banho() {
 
 // Em Papagaio
 public void banho() {
+    System.out.println("Papagaio " + getNome() + " tomou banho");
     setBanho(true);
     setLiberado(true);  // Libera imediatamente
 }
@@ -373,8 +482,10 @@ if(a instanceof Cachorro || a instanceof Gato) {
 
 **Benefícios**:
 
-- Flexibilidade no código
-- Facilita extensão do sistema
+- **Sobrecarga**: Múltiplas formas de criar objetos
+- **Sobrescrita**: Comportamentos específicos para cada tipo
+- **Interface**: Tratamento genérico de tipos semelhantes
+- Flexibilidade e extensibilidade do código
 - Código mais expressivo
 
 ---
@@ -423,53 +534,57 @@ public class Cachorro extends Animal implements Peludos {
 ### Diagrama de Classes Simplificado
 
 ```
-┌─────────────────────────┐
-│      Animal             │
-│      <<abstract>>       │
-├─────────────────────────┤
-│ - nome: String          │
-│ - petID: int            │
-│ - especie: String       │
-│ - banho: boolean        │
-│ - liberado: boolean     │
-├─────────────────────────┤
-│ + Animal(n, e)          │
-│ + banho(): void*        │
-│ + getters/setters       │
-└─────────────────────────┘
-           △
-           │
-    ┌──────┼──────┐
-    │      │      │
-┌───▼────┐ │  ┌───▼────────┐
-│Cachorro│ │  │  Papagaio  │
-├────────┤ │  ├────────────┤
-│- tosa  │ │  │            │
-├────────┤ │  ├────────────┤
-│+banho()│ │  │ + banho()  │
-│+tosa() │ │  └────────────┘
-└────────┘ │
-     △     │
-     │     │
-┌────┴─────▼───┐
-│   Peludos    │
-│ <<interface>>│
-├──────────────┤
-│ + tosa()     │
-│ + getTosa()  │
-│ + setTosa(b) │
-└──────────────┘
-     △
-     │
-┌────▼────┐
-│  Gato   │
-├─────────┤
-│ - tosa  │
-├─────────┤
-│+banho() │
-│+tosa()  │
-└─────────┘
+                    ┌─────────────────────────┐
+                    │      Animal             │
+                    │      <<abstract>>       │
+                    ├─────────────────────────┤
+                    │ - nome: String          │
+                    │ - petID: int            │
+                    │ - especie: String       │
+                    │ - banho: boolean        │
+                    │ - liberado: boolean     │
+                    ├─────────────────────────┤
+                    │ + Animal(n, e)          │
+                    │ + Animal(e)             │  ← Sobrecarga
+                    │ + banho(): void*        │
+                    │ + getters/setters       │
+                    └─────────────────────────┘
+                               △
+                               │ (herança)
+                               │
+          ┌────────────────────┼────────────────────┐
+          │                    │                    │
+    ┌─────▼──────┐      ┌──────▼─────┐      ┌──────▼────────┐
+    │  Cachorro  │      │    Gato    │      │   Papagaio    │
+    ├────────────┤      ├────────────┤      ├───────────────┤
+    │ - tosa     │      │ - tosa     │      │               │
+    ├────────────┤      ├────────────┤      ├───────────────┤
+    │ +Cachorro()│      │ + Gato()   │      │ + Papagaio()  │
+    │+Cachorro(n)│      │ + Gato(n)  │      │+ Papagaio(n)  │
+    │ + banho()  │      │ + banho()  │      │ + banho()     │
+    │ + tosa()   │      │ + tosa()   │      └───────────────┘
+    └─────────────┘      └────────────┘
+          △                    △
+          │                    │
+          │  (implementa)      │ (implementa)
+          │                    │
+          └──────────┬─────────┘
+                     │
+              ┌──────▼──────────┐
+              │    Peludos      │
+              │  <<interface>>  │
+              ├─────────────────┤
+              │ + tosa()        │
+              │ + getTosa()     │
+              │ + setTosa(b)    │
+              └─────────────────┘
 ```
+
+**Legenda**:
+
+- **△** (seta vazia): Herança (extends)
+- **△** (seta tracejada): Implementação de interface (implements)
+- **Papagaio** não implementa `Peludos` pois não possui tosa
 
 ---
 
@@ -497,20 +612,28 @@ ID,Nome,Especie,Banho,Tosa,Liberado
 
 ### Operações de Persistência
 
+**Estratégia de Persistência**: O sistema mantém uma lista `ArrayList<Animal>` em memória que é sincronizada com o arquivo CSV.
+
 #### 1. **Adicionar Animal**
 
 ```java
 public void addCSV(Animal a) {
-    a.setPetID(getUltimoID() + 1);  // Gera ID único
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter(caminho, true))) {
+        a.setPetID(getUltimoID() + 1);  // Gera ID único
+        animais.add(a);                 // Adiciona à lista em memória
 
-    Object tosa;
-    if(a instanceof Cachorro || a instanceof Gato) {
-        tosa = ((Peludos) a).getTosa();
-    } else {
-        tosa = "n/a";  // Papagaio não tem tosa
+        Object tosa;
+        if(a instanceof Cachorro || a instanceof Gato) {
+            tosa = ((Peludos) a).getTosa();
+        } else {
+            tosa = "n/a";  // Papagaio não tem tosa
+        }
+
+        // Escreve no arquivo (append mode)
+        writer.write(a.getPetID() + "," + a.getNome() + "," +
+                     a.getEspecie() + "," + a.getBanho() + "," +
+                     tosa + "," + a.getLiberado() + "\n");
     }
-
-    writer.append(dados...);  // Escreve no arquivo
 }
 ```
 
@@ -518,12 +641,33 @@ public void addCSV(Animal a) {
 
 ```java
 public ArrayList<Animal> getAllCSV() {
-    // Lê linha por linha
-    // Recria objetos baseado na espécie
-    Animal animal = criarAnimal(especie, nome);
-    animal.setPetID(id);
-    animal.setBanho(Boolean.parseBoolean(dados[3]));
-    // ...
+    animais.clear();  // Limpa lista em memória
+
+    try (BufferedReader reader = new BufferedReader(new FileReader(caminho))) {
+        String linha;
+        boolean primeiraLinha = true;
+
+        while ((linha = reader.readLine()) != null) {
+            if (primeiraLinha) {
+                primeiraLinha = false;
+                continue;  // Pula cabeçalho
+            }
+
+            String[] dados = linha.split(",");
+
+            // Recria objeto baseado na espécie
+            Animal animal = criarAnimal(dados[2], dados[1]);
+            animal.setPetID(Integer.parseInt(dados[0]));
+            animal.setBanho(Boolean.parseBoolean(dados[3]));
+            animal.setLiberado(Boolean.parseBoolean(dados[5]));
+
+            if(animal instanceof Cachorro || animal instanceof Gato) {
+                ((Peludos) animal).setTosa(Boolean.parseBoolean(dados[4]));
+            }
+
+            animais.add(animal);  // Adiciona à lista em memória
+        }
+    }
     return animais;
 }
 ```
@@ -531,44 +675,79 @@ public ArrayList<Animal> getAllCSV() {
 #### 3. **Atualizar Animal**
 
 ```java
-public void updateCSV(Animal animalAtualizado) {
-    // Lê todas as linhas
-    // Substitui apenas a linha do animal atualizado
-    // Reescreve o arquivo
+public void updateAnimal(Animal animalAtualizado) {
+    // Atualiza na lista em memória
+    for(int i = 0; i < animais.size(); i++) {
+        if(animais.get(i).getPetID() == animalAtualizado.getPetID()) {
+            animais.set(i, animalAtualizado);  // Substitui objeto
+            break;
+        }
+    }
+    updateCSV();  // Sincroniza com arquivo
 }
 ```
 
 #### 4. **Remover Animal**
 
 ```java
-public void removerPorID(int idRemover) {
-    // Lê todas as linhas exceto a que tem o ID
-    // Reescreve o arquivo sem ela
+public void removeAnimal(int idRemover) {
+    // Remove da lista em memória
+    for(int i = 0; i < animais.size(); i++) {
+        if(animais.get(i).getPetID() == idRemover) {
+            System.out.println(animais.get(i).getNome() + " removido");
+            animais.remove(i);  // Remove da lista
+            break;
+        }
+    }
+    updateCSV();  // Sincroniza com arquivo
 }
 ```
 
-### Tratamento de Problemas
-
-**BOM (Byte Order Mark)**:
+#### 5. **Sincronizar CSV (privado)**
 
 ```java
-linha = linha.replace("\uFEFF", "").trim();
-```
+private void updateCSV() {
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter(caminho, false))) {
+        // Escreve cabeçalho
+        writer.write("ID,Nome,Especie,Banho,Tosa,Liberado\n");
 
-**Linhas Vazias**:
+        // Escreve todos os animais da lista
+        for (Animal a : animais) {
+            Object tosa;
+            if(a instanceof Cachorro || a instanceof Gato) {
+                tosa = ((Peludos) a).getTosa();
+            } else {
+                tosa = "n/a";
+            }
 
-```java
-if (linha.isEmpty()) continue;
-```
-
-**Validação de Dados**:
-
-```java
-if (dados.length < 6) {
-    linhas.add(linha);  // Mantém linha original
-    continue;
+            writer.write(a.getPetID() + "," + a.getNome() + "," +
+                        a.getEspecie() + "," + a.getBanho() + "," +
+                        tosa + "," + a.getLiberado() + "\n");
+        }
+    }
 }
 ```
+
+### Vantagens da Estratégia Atual
+
+**ArrayList em Memória**:
+
+- ✅ Operações de busca e atualização mais rápidas
+- ✅ Menos leituras/escritas no arquivo
+- ✅ Código mais limpo e manutenível
+- ✅ Facilita operações em lote
+
+**BufferedWriter/BufferedReader**:
+
+- ✅ Leitura e escrita eficiente com buffer
+- ✅ Melhor performance para arquivos grandes
+- ✅ Gerenciamento automático de recursos com try-with-resources
+
+**Sincronização**:
+
+- Método privado `updateCSV()` centraliza a escrita
+- Garante consistência entre memória e arquivo
+- Reescreve arquivo completo a cada atualização
 
 ---
 
@@ -653,10 +832,10 @@ card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
 
 ```java
 banho.addActionListener(e -> {
-    a.banho();                 // Executa serviço
-    c.updateCSV(a);           // Atualiza CSV
-    banho.setEnabled(false);   // Desabilita botão
-    remove.setEnabled(a.getLiberado());  // Atualiza botão remover
+    a.banho();                          // Executa serviço
+    c.updateAnimal(a);                 // Atualiza animal (memória + CSV)
+    banho.setEnabled(false);            // Desabilita botão
+    remove.setEnabled(a.getLiberado()); // Atualiza botão remover
 });
 ```
 
@@ -664,10 +843,10 @@ banho.addActionListener(e -> {
 
 ```java
 tosa.addActionListener(e -> {
-    ((Peludos) a).tosa();
-    c.updateCSV(a);
-    tosa.setEnabled(false);
-    remove.setEnabled(a.getLiberado());
+    ((Peludos) a).tosa();              // Executa tosa
+    c.updateAnimal(a);                 // Atualiza animal (memória + CSV)
+    tosa.setEnabled(false);             // Desabilita botão
+    remove.setEnabled(a.getLiberado()); // Atualiza botão remover
 });
 ```
 
@@ -675,10 +854,10 @@ tosa.addActionListener(e -> {
 
 ```java
 remove.addActionListener(e -> {
-    c.removerPorID(a.getPetID());  // Remove do CSV
-    PainelCentral.remove(card);     // Remove do painel
-    PainelCentral.revalidate();     // Atualiza layout
-    PainelCentral.repaint();        // Redesenha
+    c.removeAnimal(a.getPetID());      // Remove do sistema (memória + CSV)
+    PainelCentral.remove(card);         // Remove card do painel
+    PainelCentral.revalidate();         // Atualiza layout
+    PainelCentral.repaint();            // Redesenha interface
 });
 ```
 
@@ -760,7 +939,9 @@ Criar.addActionListener(e -> {
    ↓
 [Verifica se pode liberar]
    ↓
-[updateCSV()] → Atualiza arquivo
+[updateAnimal(a)] → Atualiza na lista em memória
+   ↓
+[updateCSV()] → Sincroniza com arquivo
    ↓
 [Desabilita botão Banho]
    ↓
@@ -780,7 +961,9 @@ Criar.addActionListener(e -> {
    ↓
 [Verifica se pode liberar]
    ↓
-[updateCSV()] → Atualiza arquivo
+[updateAnimal(a)] → Atualiza na lista em memória
+   ↓
+[updateCSV()] → Sincroniza com arquivo
    ↓
 [Desabilita botão Tosa]
    ↓
@@ -794,7 +977,9 @@ Criar.addActionListener(e -> {
    ↓
 [Verifica se está liberado]
    ↓
-[removerPorID()] → Remove do CSV
+[removeAnimal(id)] → Remove da lista em memória
+   ↓
+[updateCSV()] → Sincroniza com arquivo
    ↓
 [Remove card do painel]
    ↓
@@ -860,17 +1045,32 @@ Este projeto demonstra a aplicação prática dos principais conceitos de Progra
 ✅ **Abstração**: Classe `Animal` define modelo abstrato  
 ✅ **Encapsulamento**: Atributos privados com acesso controlado  
 ✅ **Herança**: Hierarquia de classes bem definida  
-✅ **Polimorfismo**: Comportamentos específicos por tipo  
+✅ **Polimorfismo (Sobrecarga)**: Construtores sobrecarregados em todas as classes  
+✅ **Polimorfismo (Sobrescrita)**: Método `banho()` implementado especificamente por tipo  
 ✅ **Interface**: Segregação de responsabilidades com `Peludos`  
 ✅ **MVC**: Separação clara de responsabilidades  
-✅ **Persistência**: Dados salvos em CSV  
+✅ **Persistência**: Dados salvos em CSV com ArrayList em memória  
 ✅ **GUI**: Interface gráfica funcional e intuitiva
+
+### Destaques da Implementação
+
+**Sobrecarga de Construtor**:
+
+- Todas as classes (Animal, Cachorro, Gato, Papagaio) possuem construtores sobrecarregados
+- Permite criar animais com nome específico ou com nome padrão "Desconhecido"
+- Demonstra flexibilidade e reutilização de código
+
+**Sistema de Persistência Otimizado**:
+
+- ArrayList em memória para operações rápidas
+- Sincronização automática com arquivo CSV
+- BufferedWriter/BufferedReader para melhor performance
 
 O sistema está funcional, atende todos os requisitos do trabalho prático e serve como base sólida para futuras expansões.
 
 ---
 
-**Desenvolvido por**: Lucaldev
+**Desenvolvido por**: Lucal22
 **Disciplina**: Programação Orientada a Objetos I  
 **Instituição**: Instituto Federal de Minas Gerais (IFMG)  
 **Data**: Dezembro de 2025
