@@ -2,20 +2,19 @@ package Controller;
 
 import Model.*;
 
-import java.io.BufferedReader;
-import java.io.FileWriter;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 
 public class ControleAnimal {
 
     private final String caminho = "animais.csv";
+    private ArrayList<Animal> animais;
 
     public ControleAnimal() {
-        try (FileWriter writer = new FileWriter(caminho, true)) {
+        animais = new ArrayList<>();
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(caminho, true)) ) {
             if (new java.io.File(caminho).length() == 0) {
-                writer.append("ID,Nome,Especie,Banho,Tosa,Liberado\n");
+                writer.write("ID,Nome,Especie,Banho,Tosa,Liberado\n");
             }
         } catch (IOException e) {
             System.out.println("Erro ao inicializar CSV");
@@ -34,25 +33,23 @@ public class ControleAnimal {
 
     public void addCSV(Animal a) {
         Object tosa;
-        try (FileWriter writer = new FileWriter(caminho, true)) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(caminho, true)) ) {
             a.setPetID(getUltimoID()+1);
+            animais.add(a);
             if(a instanceof Cachorro || a instanceof Gato){
                 tosa = ((Peludos) a).getTosa();
             }else{
                 tosa = "n/a";
             }
-
-            writer.append(a.getPetID() + "," + a.getNome() + "," + a.getEspecie() + "," + a.getBanho()+ "," +tosa+ "," + a.getLiberado() +"\n");
+            writer.write(a.getPetID() + "," + a.getNome() + "," + a.getEspecie() + "," + a.getBanho()+ "," +tosa+ "," + a.getLiberado() +"\n");
         } catch (IOException e) {
             System.out.println("Não foi possível adicionar no arquivo.");
             e.printStackTrace();
         }
     }
 
-
     public ArrayList<Animal> getAllCSV() {
-        ArrayList<Animal> animais = new ArrayList<>();
-
+        animais.clear();
         try (BufferedReader reader = new BufferedReader(new FileReader(caminho))) {
             String linha;
             boolean primeiraLinha = true;
@@ -86,37 +83,40 @@ public class ControleAnimal {
         return animais;
     }
 
-    public void removerPorID(int idRemover) {
-        ArrayList<String> linhas = new ArrayList<>();
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(caminho))) {
-            String linha;
-
-            while ((linha = reader.readLine()) != null) {
-                // mantém cabeçalho
-                if (linha.startsWith("ID,")) {
-                    linhas.add(linha);
-                    continue;
-                }
-
-                if (linha.trim().isEmpty()) continue;
-
-                String[] dados = linha.split(",");
-                int idAtual = Integer.parseInt(dados[0]);
-
-                if (idAtual != idRemover) {
-                    linhas.add(linha);
-                }
+    public void removeAnimal(int idRemover) {
+        for(int i = 0;i < animais.size(); i++){
+            if(animais.get(i).getPetID() == idRemover){
+                System.out.println(animais.get(i).getNome()+" removido");
+                animais.remove(i);
+                break;
             }
+         }
+        updateCSV();
+    }
 
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void updateAnimal(Animal animalAtualizado) {
+        for(int i = 0;i < animais.size(); i++){
+            if(animais.get(i).getPetID() == animalAtualizado.getPetID()){
+                animais.set(i, animalAtualizado);
+                break;
+            }
         }
+        updateCSV();
+    }
 
-        // reescreve o arquivo
-        try (FileWriter writer = new FileWriter(caminho, false)) {
-            for (String l : linhas) {
-                writer.write(l + "\n");
+    private void updateCSV(){
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(caminho, false)) ) {
+            writer.write("ID,Nome,Especie,Banho,Tosa,Liberado\n");
+            for (Animal a : animais) {
+                System.out.println(a.getNome());
+                Object tosa;
+                if(a instanceof Cachorro || a instanceof Gato){
+                    tosa = ((Peludos) a).getTosa();
+                }else{
+                    tosa = "n/a";
+                }
+
+                writer.write(a.getPetID() + "," + a.getNome() + "," + a.getEspecie() + "," + a.getBanho()+ "," +tosa+ "," + a.getLiberado() +"\n");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -148,69 +148,7 @@ public class ControleAnimal {
         return Integer.parseInt(dados[0]);
     }
 
-    public void updateCSV(Animal animalAtualizado) {
-        ArrayList<String> linhas = new ArrayList<>();
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(caminho))) {
-            String linha;
-
-            while ((linha = reader.readLine()) != null) {
-
-                // REMOVE BOM + espaços invisíveis
-                linha = linha.replace("\uFEFF", "").trim();
-
-                if (linha.isEmpty()) continue;
-
-                if (linha.startsWith("ID,")) {
-                    linhas.add(linha);
-                    continue;
-                }
-
-                String[] dados = linha.split(",");
-
-                // segurança extra
-                if (dados.length < 6) {
-                    linhas.add(linha);
-                    continue;
-                }
-
-                int idAtual = Integer.parseInt(dados[0]);
-
-                if (idAtual == animalAtualizado.getPetID()) {
-                    String tosa;
-
-                    if (animalAtualizado instanceof Cachorro || animalAtualizado instanceof Gato) {
-                        tosa = Boolean.toString(((Peludos) animalAtualizado).getTosa());
-                    } else {
-                        tosa = "n/a";
-                    }
-
-                    String novaLinha =
-                            animalAtualizado.getPetID() + "," +
-                                    animalAtualizado.getNome() + "," +
-                                    animalAtualizado.getEspecie() + "," +
-                                    animalAtualizado.getBanho() + "," +
-                                    tosa + "," +
-                                    animalAtualizado.getLiberado();
-
-                    linhas.add(novaLinha);
-                } else {
-                    linhas.add(linha);
-                }
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try (FileWriter writer = new FileWriter(caminho, false)) {
-            for (String l : linhas) {
-                writer.write(l + "\n");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
 
 }
