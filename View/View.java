@@ -123,7 +123,7 @@ public class View {
 
         banho.addActionListener(e -> {
             a.banho();
-            c.updateCSV(a);
+            c.updateAnimal(a);
             banho.setEnabled(!a.getBanho());
             remove.setEnabled(a.getLiberado());
         });
@@ -131,14 +131,14 @@ public class View {
         if (a instanceof Cachorro || a instanceof Gato) {
             tosa.addActionListener(e -> {
                 ((Peludos) a).tosa();
-                c.updateCSV(a);
+                c.updateAnimal(a);
                 tosa.setEnabled(!((Peludos) a).getTosa());
                 remove.setEnabled(a.getLiberado());
             });
         }
 
         remove.addActionListener(e -> {
-            c.removerPorID(a.getPetID());
+            c.removeAnimal(a.getPetID());
             PainelCentral.remove(card);
             PainelCentral.revalidate();
             PainelCentral.repaint();
@@ -168,20 +168,30 @@ public class View {
             default -> throw new IllegalArgumentException("Animal inválido");
         };
     }
+    private Animal criaObjetoAnimal(String especie) {
+        return switch (especie) {
+            case "Cachorro" -> new Cachorro();
+            case "Gato" -> new Gato();
+            case "Papagaio" -> new Papagaio();
+            default -> throw new IllegalArgumentException("Animal inválido");
+        };
+    }
 
     private void init() {
         Criar.addActionListener(e -> {
 
             String nome = NomeAnimal.getText();
             String animal = (String) SelectAnimal.getSelectedItem();
+            assert animal != null;
+
+            Animal objectAnimal;
 
             if (nome == null || nome.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Digite o nome do animal!");
-                return;
+                objectAnimal = criaObjetoAnimal(animal);
+            }else{
+                objectAnimal = criaObjetoAnimal(animal, nome);
             }
 
-            assert animal != null;
-            Animal objectAnimal = criaObjetoAnimal(animal, nome);
             c.addCSV(objectAnimal);
 
             JPanel card = criarCard(objectAnimal);
