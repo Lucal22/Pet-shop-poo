@@ -563,7 +563,7 @@ public class Cachorro extends Animal implements Peludos {
     │+Cachorro(n)│      │ + Gato(n)  │      │+ Papagaio(n)  │
     │ + banho()  │      │ + banho()  │      │ + banho()     │
     │ + tosa()   │      │ + tosa()   │      └───────────────┘
-    └─────────────┘      └────────────┘
+    └────────────┘      └────────────┘
           △                    △
           │                    │
           │  (implementa)      │ (implementa)
