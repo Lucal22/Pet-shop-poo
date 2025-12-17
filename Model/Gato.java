@@ -8,6 +8,11 @@ public class Gato extends Animal implements Peludos{
         tosa = false;
     }
 
+    public Gato(){
+        super( "Gato");
+        tosa = false;
+    }
+
     public void tosa(){
         System.out.println("Gato "+getNome()+" foi tosado!");
         if(getBanho()){

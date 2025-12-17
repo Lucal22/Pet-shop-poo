@@ -8,6 +8,11 @@ public class Cachorro extends Animal implements Peludos{
         tosa = false;
     }
 
+    public Cachorro(){
+        super("Cachorro");
+        tosa = false;
+    }
+
     public void tosa(){
         System.out.println("Cachorro "+getNome()+" foi tosado!");
         if(getBanho()){
