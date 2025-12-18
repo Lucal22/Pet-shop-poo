@@ -17,7 +17,7 @@ Este projeto foi desenvolvido como Trabalho Prático 2 da disciplina de Programa
 
 ## 🏗️ Arquitetura
 
-O projeto segue o padrão arquitetural **MVC (Model-View-Controller)**:
+O projeto segue o padrão arquitetural **MVC (Model-View-Controller)** com camada **DAO**:
 
 ```
 Pet-shop-poo/
@@ -31,12 +31,14 @@ Pet-shop-poo/
 │   ├── View.java       # Interface gráfica principal
 │   └── View.form       # Layout da interface
 ├── Controller/         # Camada de controle
-│   └── ControleAnimal.java # Gerenciamento de dados e operações
+│   └── ControleAnimal.java # Lógica de negócio e validações
+├── DAO/                # Camada de acesso a dados
+│   └── AnimalDAO.java  # Persistência e operações CRUD
 ├── docs/               # Documentação
-│   ├── TP2.pdf        # Especificação do trabalho
-│   └── docs.md        # Documentação técnica
-├── animais.csv        # Arquivo de persistência
-└── README.md          # Este arquivo
+│   ├── TP2.pdf         # Especificação do trabalho
+│   └── docs.md         # Documentação técnica
+├── animais.csv         # Arquivo de persistência
+└── README.md           # Este arquivo
 ```
 
 ## 🎯 Conceitos de POO Aplicados

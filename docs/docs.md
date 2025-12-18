@@ -204,7 +204,9 @@ if (a instanceof Cachorro || a instanceof Gato) {
 
 ---
 
-### 3. Padrão MVC (Model-View-Controller)
+### 3. Padrão MVC (Model-View-Controller) com DAO
+
+O projeto implementa o padrão MVC com uma camada adicional DAO (Data Access Object) para separar completamente a lógica de persistência.
 
 #### 📁 Model (Modelo)
 
@@ -220,6 +222,7 @@ if (a instanceof Cachorro || a instanceof Gato) {
 
 - ❌ Não conhece a View
 - ❌ Não conhece o Controller
+- ❌ Não conhece o DAO
 - ✅ Contém apenas regras de negócio
 - ✅ Reutilizável e testável independentemente
 
@@ -227,63 +230,126 @@ if (a instanceof Cachorro || a instanceof Gato) {
 
 #### 🎮 Controller (Controlador)
 
-**Responsabilidade**: Gerenciamento de operações e persistência
+**Responsabilidade**: Lógica de negócio, validações e mediação entre View e DAO
 
 **Classe**: `ControleAnimal.java`
 
 **Atributos**:
 
-- `private ArrayList<Animal> animais`: Lista em memória dos animais carregados
-- `private final String caminho = "animais.csv"`: Caminho do arquivo de persistência
+- `private View v`: Referência à View para exibir mensagens
+- `private final String caminho`: Caminho do arquivo CSV (mantido por compatibilidade)
+
+**Construtor**:
+
+```java
+public ControleAnimal(View v) {
+    this.v = v;
+    AnimalDAO.criaArquivo();  // Inicializa arquivo CSV via DAO
+}
+```
 
 **Métodos Principais**:
 
-1. **`addCSV(Animal a)`**
+1. **`addAnimal(Animal a): boolean`**
 
-   - Adiciona novo animal ao arquivo CSV
-   - Adiciona o animal à lista em memória (`animais.add(a)`)
-   - Gera ID automático incremental
-   - Trata campos específicos de cada tipo (tosa para peludos)
-   - Usa `BufferedWriter` para escrita eficiente
+   - **Validação**: Verifica se o nome inicia com letra usando regex `^\\p{L}.*`
+   - Se válido: chama `AnimalDAO.addAnimal(a)` e retorna `true`
+   - Se inválido: exibe mensagem de erro via `JOptionPane` e retorna `false`
+   - **Responsabilidade**: Validação de dados antes de persistir
 
-2. **`getAllCSV()`**
+2. **`getAllAnimals(): ArrayList<Animal>`**
 
-   - Limpa a lista em memória (`animais.clear()`)
-   - Lê todos os animais do arquivo CSV
-   - Recria objetos com base na espécie usando `criarAnimal()`
-   - Popula a lista `animais` com os objetos recriados
-   - Retorna ArrayList de animais
-   - Usa `BufferedReader` para leitura eficiente
+   - Delega ao DAO: `return AnimalDAO.getAllAnimals()`
+   - Retorna lista de todos os animais carregados do CSV
 
 3. **`updateAnimal(Animal animalAtualizado)`**
 
-   - Atualiza o animal na lista em memória
-   - Busca o animal pelo `petID` e substitui na lista
-   - Chama `updateCSV()` para sincronizar com o arquivo
+   - Delega ao DAO: `AnimalDAO.updateAnimal(animalAtualizado)`
+   - Atualiza animal após serviços de banho/tosa
 
-4. **`removeAnimal(int idRemover)`**
-
-   - Remove animal da lista em memória pelo `petID`
-   - Exibe mensagem de confirmação da remoção
-   - Chama `updateCSV()` para sincronizar com o arquivo
-
-5. **`updateCSV()` (privado)**
-
-   - Reescreve completamente o arquivo CSV
-   - Itera sobre a lista `animais` em memória
-   - Escreve cabeçalho + todos os animais
-   - Usa `BufferedWriter` com `false` para sobrescrever
-
-6. **`getUltimoID()` (privado)**
-   - Lê a última linha do arquivo CSV
-   - Retorna o último ID usado para geração de novos IDs
-   - Retorna 0 se o arquivo estiver vazio
+4. **`removeAnimal(int id)`**
+   - Delega ao DAO: `AnimalDAO.removeAnimal(id)`
+   - Remove animal do sistema
 
 **Aplicação de POO**:
 
-- **Encapsulamento**: Lógica de persistência isolada
-- **Single Responsibility**: Única responsabilidade é gerenciar dados
-- **Factory Pattern**: Método `criarAnimal()` cria objetos baseado em tipo
+- **Encapsulamento**: Controller não conhece detalhes de persistência
+- **Single Responsibility**: Apenas validação e orquestração
+- **Delegation**: Delega operações CRUD para o DAO
+
+---
+
+#### 💾 DAO (Data Access Object)
+
+**Responsabilidade**: Persistência de dados e operações CRUD no arquivo CSV
+
+**Classe**: `AnimalDAO.java`
+
+**Atributos**:
+
+- `private static final String caminho = "animais.csv"`: Caminho do arquivo
+- `private static ArrayList<Animal> animais`: Lista em memória (cache)
+
+**Métodos Principais**:
+
+1. **`criaArquivo()` (público estático)**
+
+   - Inicializa o ArrayList `animais`
+   - Cria arquivo CSV se não existir
+   - Escreve cabeçalho: `ID,Nome,Especie,Banho,Tosa,Liberado`
+   - Usa `BufferedWriter` com append mode
+
+2. **`addAnimal(Animal a)` (público estático)**
+
+   - Gera ID automático: `a.setPetID(getUltimoID() + 1)`
+   - Adiciona à lista em memória: `animais.add(a)`
+   - Verifica se implementa `Peludos` para campo tosa
+   - Escreve linha no CSV com `BufferedWriter` (append)
+
+3. **`getAllAnimals(): ArrayList<Animal>` (público estático)**
+
+   - Limpa cache: `animais.clear()`
+   - Lê arquivo CSV linha por linha com `BufferedReader`
+   - Usa `criarAnimal()` factory para recriar objetos
+   - Restaura estado de cada animal (ID, banho, tosa, liberado)
+   - Retorna lista completa
+
+4. **`updateAnimal(Animal animalAtualizado)` (público estático)**
+
+   - Busca animal na lista por `petID`
+   - Substitui objeto: `animais.set(i, animalAtualizado)`
+   - Chama `updateCSV()` para sincronizar arquivo
+
+5. **`removeAnimal(int idRemover)` (público estático)**
+
+   - Busca e remove da lista por `petID`
+   - Exibe mensagem: `"[Especie] [Nome] removido"`
+   - Chama `updateCSV()` para sincronizar arquivo
+
+6. **`updateCSV()` (privado estático)**
+
+   - Reescreve arquivo completamente
+   - Escreve cabeçalho + todas as linhas da lista
+   - Usa `BufferedWriter` com `false` (sobrescrever)
+
+7. **`criarAnimal(String tipo, String nome)` (privado estático)**
+
+   - Factory method para criar instâncias
+   - Usa switch expression para determinar tipo
+   - Lança exceção se tipo inválido
+
+8. **`getUltimoID()` (privado estático)**
+   - Lê última linha do arquivo
+   - Extrai e retorna o ID
+   - Retorna 0 se arquivo vazio
+
+**Vantagens do DAO**:
+
+- ✅ Separação completa de responsabilidades
+- ✅ Controller não conhece detalhes de persistência
+- ✅ Fácil substituir CSV por banco de dados
+- ✅ Métodos estáticos permitem acesso global
+- ✅ Cache em memória para performance
 
 ---
 
@@ -302,27 +368,68 @@ if (a instanceof Cachorro || a instanceof Gato) {
 - `JComboBox SelectAnimal` - Seletor de espécie
 - `JButton Criar` - Botão de cadastro
 
+**Construtor**:
+
+```java
+View() {
+    // ... configurações de layout e estilo ...
+
+    c = new ControleAnimal(this);  // Passa referência da View
+
+    for (Animal a : c.getAllAnimals()) {  // Carrega animais via Controller
+        PainelCentral.add(criarCard(a));
+    }
+
+    init();  // Configura event listeners
+}
+```
+
 **Métodos Principais**:
 
-1. **`criarCard(Animal a)`**
+1. **`criarCard(Animal a): JPanel`**
 
    - Cria card visual para cada animal
-   - Botões dinâmicos baseados no tipo e estado
-   - Event listeners para ações
+   - Chama `getJPanel()` para criar estrutura base
+   - Botões habilitados/desabilitados conforme estado
+   - Usa `instanceof Peludos` para verificar se exibe botão tosa
+   - Event listeners para interações
 
-2. **`criarBotao(String texto, Color cor)`**
+2. **`getJPanel(): JPanel` (privado estático)**
+
+   - Factory method que retorna JPanel configurado
+   - Define layout, tamanho, cores e bordas
+   - Código extraído para reutilização
+
+3. **`criarBotao(String texto, Color cor): JButton`**
 
    - Factory method para botões padronizados
-   - Consistência visual
+   - Garante consistência visual
 
-3. **`criaObjetoAnimal(String especie, String nome)`**
-   - Factory method para criação de animais
+4. **`criaObjetoAnimal(String especie, String nome): Animal`**
+
+   - Factory sobrecarregado com nome específico
    - Usa Switch Expression (Java 14+)
 
-**Design Pattern Aplicado**:
+5. **`criaObjetoAnimal(String especie): Animal`**
+
+   - Factory sobrecarregado SEM nome (usa construtor padrão)
+   - Permite criar animais com nome "Desconhecido"
+
+6. **`init()`**
+
+   - Configura event listener do botão "Criar"
+   - **Lógica**: Se campo nome vazio → usa construtor sem nome
+   - **Validação**: Chama `c.addAnimal()` que retorna boolean
+   - Só adiciona card à interface se validação passar
+
+7. **`getPainelGeral(): JPanel`**
+   - Retorna painel principal para ser exibido no JFrame
+
+**Design Patterns Aplicados**:
 
 - **Observer Pattern**: Event Listeners respondem a ações do usuário
-- **Factory Method**: Criação de cards e botões padronizados
+- **Factory Method**: Criação de cards, botões e animais padronizados
+- **MVC**: View conhece Controller, não conhece Model diretamente
 
 ---
 
@@ -590,6 +697,22 @@ public class Cachorro extends Animal implements Peludos {
 
 ## Persistência de Dados
 
+### Arquitetura de Persistência
+
+O sistema utiliza o padrão **DAO (Data Access Object)** para separar a lógica de persistência:
+
+```
+View → Controller → DAO → CSV File
+  ↑        ↓          ↓
+  └────────┴──────────┘
+   (validação e fluxo)
+```
+
+- **View**: Captura dados do usuário
+- **Controller**: Valida dados e orquestra operações
+- **DAO**: Responsável exclusivo por operações CRUD no CSV
+- **CSV**: Arquivo de persistência
+
 ### Formato CSV
 
 **Estrutura do Arquivo `animais.csv`**:
@@ -610,23 +733,40 @@ ID,Nome,Especie,Banho,Tosa,Liberado
 - `Tosa`: Status da tosa (true/false/n/a para papagaios)
 - `Liberado`: Se pode ser removido (true/false)
 
-### Operações de Persistência
+### Operações de Persistência (AnimalDAO)
 
-**Estratégia de Persistência**: O sistema mantém uma lista `ArrayList<Animal>` em memória que é sincronizada com o arquivo CSV.
+**Estratégia**: ArrayList em memória sincronizado com arquivo CSV
 
-#### 1. **Adicionar Animal**
+#### 1. **Inicializar Sistema**
 
 ```java
-public void addCSV(Animal a) {
+public static void criaArquivo() {
+    animais = new ArrayList<>();
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter(caminho, true))) {
+        if (new File(caminho).length() == 0) {
+            writer.write("ID,Nome,Especie,Banho,Tosa,Liberado\n");
+        }
+    }
+}
+```
+
+- Chamado no construtor do Controller
+- Cria arquivo se não existir
+- Inicializa ArrayList
+
+#### 2. **Adicionar Animal**
+
+```java
+public static void addAnimal(Animal a) {
     try (BufferedWriter writer = new BufferedWriter(new FileWriter(caminho, true))) {
         a.setPetID(getUltimoID() + 1);  // Gera ID único
-        animais.add(a);                 // Adiciona à lista em memória
+        animais.add(a);                 // Adiciona ao cache
 
         Object tosa;
-        if(a instanceof Cachorro || a instanceof Gato) {
+        if(a instanceof Peludos) {      // Verifica interface, não classes
             tosa = ((Peludos) a).getTosa();
         } else {
-            tosa = "n/a";  // Papagaio não tem tosa
+            tosa = "n/a";
         }
 
         // Escreve no arquivo (append mode)
@@ -637,11 +777,14 @@ public void addCSV(Animal a) {
 }
 ```
 
-#### 2. **Carregar Animais**
+- **Melhoria**: Usa `instanceof Peludos` em vez de verificar classes específicas
+- Adiciona ao cache E ao arquivo simultaneamente
+
+#### 3. **Carregar Animais**
 
 ```java
-public ArrayList<Animal> getAllCSV() {
-    animais.clear();  // Limpa lista em memória
+public static ArrayList<Animal> getAllAnimals() {
+    animais.clear();  // Limpa cache
 
     try (BufferedReader reader = new BufferedReader(new FileReader(caminho))) {
         String linha;
@@ -655,31 +798,34 @@ public ArrayList<Animal> getAllCSV() {
 
             String[] dados = linha.split(",");
 
-            // Recria objeto baseado na espécie
+            // Factory method recria objetos
             Animal animal = criarAnimal(dados[2], dados[1]);
             animal.setPetID(Integer.parseInt(dados[0]));
             animal.setBanho(Boolean.parseBoolean(dados[3]));
             animal.setLiberado(Boolean.parseBoolean(dados[5]));
 
-            if(animal instanceof Cachorro || animal instanceof Gato) {
+            if(animal instanceof Peludos) {
                 ((Peludos) animal).setTosa(Boolean.parseBoolean(dados[4]));
             }
 
-            animais.add(animal);  // Adiciona à lista em memória
+            animais.add(animal);  // Popula cache
         }
     }
     return animais;
 }
 ```
 
-#### 3. **Atualizar Animal**
+- Chamado uma vez na inicialização da View
+- Reconstrói cache a partir do arquivo
+
+#### 4. **Atualizar Animal**
 
 ```java
-public void updateAnimal(Animal animalAtualizado) {
-    // Atualiza na lista em memória
+public static void updateAnimal(Animal animalAtualizado) {
+    // Atualiza no cache
     for(int i = 0; i < animais.size(); i++) {
         if(animais.get(i).getPetID() == animalAtualizado.getPetID()) {
-            animais.set(i, animalAtualizado);  // Substitui objeto
+            animais.set(i, animalAtualizado);
             break;
         }
     }
@@ -687,15 +833,18 @@ public void updateAnimal(Animal animalAtualizado) {
 }
 ```
 
-#### 4. **Remover Animal**
+- Chamado após banho/tosa
+- Atualiza cache e sincroniza arquivo
+
+#### 5. **Remover Animal**
 
 ```java
-public void removeAnimal(int idRemover) {
-    // Remove da lista em memória
+public static void removeAnimal(int idRemover) {
     for(int i = 0; i < animais.size(); i++) {
         if(animais.get(i).getPetID() == idRemover) {
-            System.out.println(animais.get(i).getNome() + " removido");
-            animais.remove(i);  // Remove da lista
+            System.out.println(animais.get(i).getEspecie() + " " +
+                             animais.get(i).getNome() + " removido");
+            animais.remove(i);
             break;
         }
     }
@@ -703,18 +852,21 @@ public void removeAnimal(int idRemover) {
 }
 ```
 
-#### 5. **Sincronizar CSV (privado)**
+- Exibe mensagem com espécie e nome
+- Remove do cache e sincroniza
+
+#### 6. **Sincronizar CSV (privado)**
 
 ```java
-private void updateCSV() {
+private static void updateCSV() {
     try (BufferedWriter writer = new BufferedWriter(new FileWriter(caminho, false))) {
         // Escreve cabeçalho
         writer.write("ID,Nome,Especie,Banho,Tosa,Liberado\n");
 
-        // Escreve todos os animais da lista
+        // Escreve todos os animais do cache
         for (Animal a : animais) {
             Object tosa;
-            if(a instanceof Cachorro || a instanceof Gato) {
+            if(a instanceof Peludos) {
                 tosa = ((Peludos) a).getTosa();
             } else {
                 tosa = "n/a";
@@ -728,9 +880,25 @@ private void updateCSV() {
 }
 ```
 
-### Vantagens da Estratégia Atual
+- Reescreve arquivo completamente (modo sobrescrever)
+- Fonte única de verdade: cache em memória
 
-**ArrayList em Memória**:
+### Vantagens da Arquitetura com DAO
+
+**Separação de Responsabilidades**:
+
+- ✅ Controller não conhece detalhes de CSV
+- ✅ Fácil trocar CSV por banco de dados (só mudar DAO)
+- ✅ Código mais testável e manutenível
+
+**Métodos Estáticos**:
+
+- ✅ Acesso global ao cache de animais
+- ✅ Não precisa instanciar DAO
+- ✅ Compartilhamento de estado entre classes
+
+**ArrayList em Memória (Cache)**:
+**ArrayList em Memória (Cache)**:
 
 - ✅ Operações de busca e atualização mais rápidas
 - ✅ Menos leituras/escritas no arquivo
@@ -741,13 +909,13 @@ private void updateCSV() {
 
 - ✅ Leitura e escrita eficiente com buffer
 - ✅ Melhor performance para arquivos grandes
-- ✅ Gerenciamento automático de recursos com try-with-resources
+- ✅ Gerenciamento automático de recursos (try-with-resources)
 
-**Sincronização**:
+**Uso de instanceof Peludos**:
 
-- Método privado `updateCSV()` centraliza a escrita
-- Garante consistência entre memória e arquivo
-- Reescreve arquivo completo a cada atualização
+- ✅ Mais genérico que verificar `Cachorro || Gato`
+- ✅ Facilita adição de novos animais peludos (ex: Coelho)
+- ✅ Segue princípio da interface
 
 ---
 
@@ -762,7 +930,6 @@ private static final Color BG_GERAL = new Color(245, 246, 250);  // Cinza claro
 private static final Color BG_CARD = Color.WHITE;                // Branco
 private static final Color PRIMARY = new Color(52, 152, 219);    // Azul
 private static final Color DANGER = new Color(231, 76, 60);      // Vermelho
-private static final Color SUCCESS = new Color(46, 204, 113);    // Verde
 ```
 
 **Tipografia**:
@@ -832,59 +999,78 @@ card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
 
 ```java
 banho.addActionListener(e -> {
-    a.banho();                          // Executa serviço
-    c.updateAnimal(a);                 // Atualiza animal (memória + CSV)
+    a.banho();                          // Executa serviço no Model
+    c.updateAnimal(a);                  // Controller → DAO → CSV
     banho.setEnabled(false);            // Desabilita botão
     remove.setEnabled(a.getLiberado()); // Atualiza botão remover
 });
 ```
 
+- Chama método do Model
+- Delega atualização ao Controller (que usa DAO)
+
 **Botão Tosa**:
 
 ```java
-tosa.addActionListener(e -> {
-    ((Peludos) a).tosa();              // Executa tosa
-    c.updateAnimal(a);                 // Atualiza animal (memória + CSV)
-    tosa.setEnabled(false);             // Desabilita botão
-    remove.setEnabled(a.getLiberado()); // Atualiza botão remover
-});
+if (a instanceof Peludos) {
+    tosa.addActionListener(e -> {
+        ((Peludos) a).tosa();              // Executa tosa no Model
+        c.updateAnimal(a);                 // Controller → DAO → CSV
+        tosa.setEnabled(false);             // Desabilita botão
+        remove.setEnabled(a.getLiberado()); // Atualiza botão remover
+    });
+}
 ```
+
+- Verifica interface `Peludos` antes de criar listener
+- Delega atualização ao Controller
 
 **Botão Remover**:
 
 ```java
 remove.addActionListener(e -> {
-    c.removeAnimal(a.getPetID());      // Remove do sistema (memória + CSV)
-    PainelCentral.remove(card);         // Remove card do painel
+    c.removeAnimal(a.getPetID());       // Controller → DAO → remove do CSV
+    PainelCentral.remove(card);         // Remove card da interface
     PainelCentral.revalidate();         // Atualiza layout
-    PainelCentral.repaint();            // Redesenha interface
+    PainelCentral.repaint();            // Redesenha
 });
 ```
 
-**Botão Criar**:
+- Remove primeiro da persistência (via Controller/DAO)
+- Depois remove da interface
+
+**Botão Criar** (atualizado):
 
 ```java
 Criar.addActionListener(e -> {
     String nome = NomeAnimal.getText();
     String animal = (String) SelectAnimal.getSelectedItem();
+    assert animal != null;
 
+    Animal objectAnimal;
+
+    // Sobrecarga de construtor
     if (nome == null || nome.trim().isEmpty()) {
-        JOptionPane.showMessageDialog(null, "Digite o nome do animal!");
-        return;
+        objectAnimal = criaObjetoAnimal(animal);      // Sem nome → "Desconhecido"
+    } else {
+        objectAnimal = criaObjetoAnimal(animal, nome); // Com nome específico
     }
 
-    Animal objectAnimal = criaObjetoAnimal(animal, nome);
-    c.addCSV(objectAnimal);
-
-    JPanel card = criarCard(objectAnimal);
-    PainelCentral.add(card);
-
-    PainelCentral.revalidate();
-    PainelCentral.repaint();
-
-    NomeAnimal.setText("");  // Limpa campo
+    // Validação no Controller
+    if(c.addAnimal(objectAnimal)) {  // Retorna boolean
+        JPanel card = criarCard(objectAnimal);
+        PainelCentral.add(card);
+        PainelCentral.revalidate();
+        PainelCentral.repaint();
+        NomeAnimal.setText("");  // Limpa campo
+    }
+    // Se falhar validação, mensagem já foi exibida pelo Controller
 });
 ```
+
+- **Novidade 1**: Usa sobrecarga de `criaObjetoAnimal`
+- **Novidade 2**: Controller valida e retorna boolean
+- **Novidade 3**: Só adiciona card se validação passar
 
 ---
 
@@ -909,104 +1095,180 @@ Criar.addActionListener(e -> {
 ### 2. Cadastro de Novo Animal
 
 ```
-[Usuário preenche nome]
-   ↓
+### 1. Inicialização do Sistema
+
+```
+
+[Main → View Constructor]
+↓
+[new ControleAnimal(this)]
+↓
+[AnimalDAO.criaArquivo()] → Inicializa CSV e ArrayList
+↓
+[c.getAllAnimals()] → Controller delega ao DAO
+↓
+[AnimalDAO.getAllAnimals()] → Lê CSV e popula cache
+↓
+[for each animal → criarCard()] → Cria cards visuais
+↓
+[Exibe Interface]
+
+```
+
+### 2. Cadastro de Novo Animal
+
+```
+
+[Usuário preenche nome (ou deixa vazio)]
+↓
 [Usuário seleciona espécie]
-   ↓
+↓
 [Clica em "Criar"]
-   ↓
-[Validação do nome]
-   ↓
-[criaObjetoAnimal()] → Cria objeto apropriado
-   ↓
-[addCSV()] → Salva no arquivo
-   ↓
-[criarCard()] → Cria card visual
-   ↓
-[Adiciona ao painel]
-   ↓
-[Atualiza interface]
+↓
+[View verifica se nome está vazio]
+↓ ↓
+[Vazio] [Preenchido]
+↓ ↓
+[criaObjetoAnimal(especie)] [criaObjetoAnimal(especie, nome)]
+↓ ↓
+[Animal com "Desconhecido"] [Animal com nome específico]
+└───────┬───────┘
+↓
+[c.addAnimal(animal)] → Controller valida
+↓
+[Validação: nome inicia com letra?]
+↓ ↓
+[SIM] [NÃO]
+↓ ↓
+[AnimalDAO.addAnimal()] [JOptionPane erro + return false]
+↓
+[Adiciona ao cache + escreve no CSV]
+↓
+[View recebe true → cria card e adiciona ao painel]
+↓
+[Interface atualizada]
+
 ```
 
 ### 3. Realizar Serviço de Banho
 
 ```
+
 [Usuário clica "Banho"]
-   ↓
-[Executa a.banho()]
-   ↓
-[Atualiza atributos do objeto]
-   ↓
-[Verifica se pode liberar]
-   ↓
-[updateAnimal(a)] → Atualiza na lista em memória
-   ↓
-[updateCSV()] → Sincroniza com arquivo
-   ↓
-[Desabilita botão Banho]
-   ↓
-[Atualiza botão Remover se liberado]
+↓
+[a.banho()] → Executa no Model
+↓
+[Atualiza atributos (setBanho, setLiberado)]
+↓
+[c.updateAnimal(a)] → Controller delega ao DAO
+↓
+[AnimalDAO.updateAnimal(a)]
+↓
+[Busca no cache por petID e substitui]
+↓
+[updateCSV()] → Reescreve arquivo completo
+↓
+[View: desabilita botão Banho]
+↓
+[View: atualiza estado botão Remover]
+
 ```
 
 ### 4. Realizar Serviço de Tosa
 
 ```
+
 [Usuário clica "Tosa"]
-   ↓
-[Verifica se é Peludo]
-   ↓
-[Executa ((Peludos) a).tosa()]
-   ↓
-[Atualiza atributos]
-   ↓
-[Verifica se pode liberar]
-   ↓
-[updateAnimal(a)] → Atualiza na lista em memória
-   ↓
-[updateCSV()] → Sincroniza com arquivo
-   ↓
-[Desabilita botão Tosa]
-   ↓
-[Atualiza botão Remover se liberado]
+↓
+[((Peludos) a).tosa()] → Executa no Model
+↓
+[Atualiza atributos (setTosa, setLiberado)]
+↓
+[c.updateAnimal(a)] → Controller delega ao DAO
+↓
+[AnimalDAO.updateAnimal(a)]
+↓
+[Busca no cache por petID e substitui]
+↓
+[updateCSV()] → Reescreve arquivo completo
+↓
+[View: desabilita botão Tosa]
+↓
+[View: atualiza estado botão Remover]
+
 ```
 
 ### 5. Remover Animal
 
 ```
+
 [Usuário clica "Remover"]
-   ↓
-[Verifica se está liberado]
-   ↓
-[removeAnimal(id)] → Remove da lista em memória
-   ↓
-[updateCSV()] → Sincroniza com arquivo
-   ↓
-[Remove card do painel]
-   ↓
-[revalidate() + repaint()]
-   ↓
+↓
+[Botão só está habilitado se liberado = true]
+↓
+[c.removeAnimal(petID)] → Controller delega ao DAO
+↓
+[AnimalDAO.removeAnimal(id)]
+↓
+[Busca no cache e remove (animais.remove(i))]
+↓
+[System.out: "[Especie] [Nome] removido"]
+↓
+[updateCSV()] → Reescreve arquivo sem o animal
+↓
+[View: remove card do painel]
+↓
+[View: revalidate() + repaint()]
+↓
 [Interface atualizada]
+
 ```
 
 ---
 
 ## Decisões de Design
 
-### 1. Por que MVC?
+### 1. Por que MVC + DAO?
 
-**Separação de Responsabilidades**:
-
-- Model: Regras de negócio isoladas
-- View: Interface independente da lógica
-- Controller: Mediador entre camadas
+**Separação em Camadas**:
+- **Model**: Apenas regras de negócio (banho, tosa, liberação)
+- **View**: Apenas interface e eventos
+- **Controller**: Validação e orquestração
+- **DAO**: Apenas persistência em CSV
 
 **Benefícios**:
-
-- ✅ Testabilidade: Cada camada pode ser testada independentemente
+- ✅ Testabilidade: Cada camada testável independentemente
 - ✅ Manutenibilidade: Mudanças isoladas não afetam outras camadas
-- ✅ Reusabilidade: Model pode ser usado em outras interfaces
+- ✅ Reusabilidade: Model pode ser usado com outras interfaces
+- ✅ Extensibilidade: Fácil trocar CSV por banco de dados
 
-### 2. Por que CSV?
+**Fluxo de Dados**:
+```
+
+View → Controller (valida) → DAO (persiste) → CSV
+**Fluxo de Dados**:
+
+```
+View → Controller (valida) → DAO (persiste) → CSV
+View ← Controller (retorna) ← DAO (carrega) ← CSV
+```
+
+### 2. Por que DAO Separado do Controller?
+
+**Antes** (Controller fazia tudo):
+
+- ❌ Controller conhecia detalhes do CSV
+- ❌ Misturava validação com persistência
+- ❌ Difícil trocar mecanismo de persistência
+
+**Depois** (DAO separado):
+
+- ✅ Controller só valida e orquestra
+- ✅ DAO encapsula 100% da persistência
+- ✅ Trocar CSV por DB: só mudar DAO
+- ✅ Código mais limpo e testável
+
+### 3. Por que CSV?
 
 **Simplicidade**:
 
@@ -1020,15 +1282,21 @@ Criar.addActionListener(e -> {
 - ❌ Performance limitada para grandes volumes
 - ❌ Sem controle de concorrência
 
-**Alternativa Futura**: Migrar para SQLite ou outro banco leve
+**Alternativa Futura**: Migrar para SQLite (só mudar AnimalDAO)
 
-### 3. Por que Interface `Peludos`?
+### 4. Por que Interface `Peludos`?
 
 **Segregação de Comportamento**:
 
 - Nem todo animal precisa de tosa
 - Interface define contrato claro
 - Facilita adição de novos tipos peludos
+
+**Uso de `instanceof Peludos`**:
+
+- Mais genérico que `instanceof Cachorro || instanceof Gato`
+- Se criar `Coelho implements Peludos`, código já funciona
+- Segue princípio "Programe para interface, não implementação"
 
 **Exemplo de Extensão**:
 
@@ -1045,32 +1313,58 @@ Este projeto demonstra a aplicação prática dos principais conceitos de Progra
 ✅ **Abstração**: Classe `Animal` define modelo abstrato  
 ✅ **Encapsulamento**: Atributos privados com acesso controlado  
 ✅ **Herança**: Hierarquia de classes bem definida  
+✅ **Abstração**: Classe `Animal` define modelo abstrato  
+✅ **Encapsulamento**: Atributos privados com acesso controlado  
+✅ **Herança**: Hierarquia de classes bem definida  
 ✅ **Polimorfismo (Sobrecarga)**: Construtores sobrecarregados em todas as classes  
 ✅ **Polimorfismo (Sobrescrita)**: Método `banho()` implementado especificamente por tipo  
 ✅ **Interface**: Segregação de responsabilidades com `Peludos`  
-✅ **MVC**: Separação clara de responsabilidades  
-✅ **Persistência**: Dados salvos em CSV com ArrayList em memória  
+✅ **MVC + DAO**: Separação clara de responsabilidades em camadas  
+✅ **Persistência**: Dados salvos em CSV via DAO com cache em memória  
+✅ **Validação**: Controller valida dados antes de persistir  
 ✅ **GUI**: Interface gráfica funcional e intuitiva
 
 ### Destaques da Implementação
 
+**Arquitetura em Camadas (MVC + DAO)**:
+
+- **Model**: Apenas lógica de negócio (Animal, Cachorro, Gato, Papagaio, Peludos)
+- **View**: Interface Swing com event listeners e validação visual
+- **Controller**: Validação de dados (regex para nome) e orquestração
+- **DAO**: Camada dedicada à persistência (CRUD no CSV)
+- **Benefício**: Fácil manutenção e possibilidade de trocar CSV por banco de dados
+
 **Sobrecarga de Construtor**:
 
-- Todas as classes (Animal, Cachorro, Gato, Papagaio) possuem construtores sobrecarregados
-- Permite criar animais com nome específico ou com nome padrão "Desconhecido"
-- Demonstra flexibilidade e reutilização de código
+- Todas as classes possuem construtores com e sem nome
+- Permite criar animais com nome "Desconhecido" se campo vazio
+- View usa factory methods `criaObjetoAnimal(especie)` e `criaObjetoAnimal(especie, nome)`
 
-**Sistema de Persistência Otimizado**:
+**Validação no Controller**:
 
-- ArrayList em memória para operações rápidas
-- Sincronização automática com arquivo CSV
-- BufferedWriter/BufferedReader para melhor performance
+- Método `addAnimal()` retorna boolean (sucesso/falha)
+- Valida se nome inicia com letra usando regex `^\\p{L}.*`
+- Exibe mensagem de erro via `JOptionPane` se inválido
+- View só adiciona card se validação passar
 
-O sistema está funcional, atende todos os requisitos do trabalho prático e serve como base sólida para futuras expansões.
+**Sistema de Persistência (DAO)**:
+
+- ArrayList estático em memória (cache compartilhado)
+- Métodos estáticos para acesso global
+- `instanceof Peludos` em vez de verificar classes específicas
+- Sincronização automática entre cache e CSV
+
+**Uso Avançado de instanceof**:
+
+- `instanceof Peludos` permite extensibilidade
+- Se criar `Coelho implements Peludos`, código já funciona
+- Segue princípio "Programe para interface"
+
+O sistema está funcional, atende todos os requisitos do trabalho prático, implementa boas práticas de POO e arquitetura, e serve como base sólida para futuras expansões.
 
 ---
 
-**Desenvolvido por**: Lucal22
+**Desenvolvido por**: Lucas  
 **Disciplina**: Programação Orientada a Objetos I  
 **Instituição**: Instituto Federal de Minas Gerais (IFMG)  
 **Data**: Dezembro de 2025
