@@ -65,9 +65,9 @@ public class View {
         SelectAnimal.addItem("Gato");
         SelectAnimal.addItem("Papagaio");
 
-        c = new ControleAnimal();
+        c = new ControleAnimal(this);
 
-        for (Animal a : c.getAllCSV()) {
+        for (Animal a : c.getAllAnimals()) {
             PainelCentral.add(criarCard(a));
         }
 
@@ -85,18 +85,7 @@ public class View {
     }
 
     private JPanel criarCard(Animal a) {
-        JPanel card = new JPanel();
-
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setPreferredSize(CARD_SIZE);
-        card.setMinimumSize(CARD_SIZE);
-        card.setMaximumSize(CARD_SIZE);
-        card.setBackground(BG_CARD);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 220, 220)),
-                BorderFactory.createEmptyBorder(8, 10, 8, 10)
-        ));
-        card.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JPanel card = getJPanel();
 
         JLabel label = new JLabel(a.getNome());
         label.setFont(FONT_TITULO);
@@ -113,7 +102,7 @@ public class View {
 
         JButton tosa = criarBotao("Tosa", PRIMARY);
         tosa.setAlignmentX(Component.CENTER_ALIGNMENT);
-        if (a instanceof Cachorro || a instanceof Gato) {
+        if (a instanceof Peludos) {
             tosa.setEnabled(!((Peludos) a).getTosa());
         }
 
@@ -128,7 +117,7 @@ public class View {
             remove.setEnabled(a.getLiberado());
         });
 
-        if (a instanceof Cachorro || a instanceof Gato) {
+        if (a instanceof Peludos) {
             tosa.addActionListener(e -> {
                 ((Peludos) a).tosa();
                 c.updateAnimal(a);
@@ -149,13 +138,29 @@ public class View {
         card.add(Box.createVerticalStrut(5));
         card.add(banho);
 
-        if (a instanceof Cachorro || a instanceof Gato) {
+        if (a instanceof Peludos) {
             card.add(tosa);
         }
 
         card.add(Box.createVerticalStrut(5));
         card.add(remove);
 
+        return card;
+    }
+
+    private static JPanel getJPanel() {
+        JPanel card = new JPanel();
+
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setPreferredSize(CARD_SIZE);
+        card.setMinimumSize(CARD_SIZE);
+        card.setMaximumSize(CARD_SIZE);
+        card.setBackground(BG_CARD);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)),
+                BorderFactory.createEmptyBorder(8, 10, 8, 10)
+        ));
+        card.setAlignmentX(Component.LEFT_ALIGNMENT);
         return card;
     }
 
@@ -186,21 +191,24 @@ public class View {
 
             Animal objectAnimal;
 
+
             if (nome == null || nome.trim().isEmpty()) {
                 objectAnimal = criaObjetoAnimal(animal);
             }else{
                 objectAnimal = criaObjetoAnimal(animal, nome);
             }
 
-            c.addCSV(objectAnimal);
 
-            JPanel card = criarCard(objectAnimal);
-            PainelCentral.add(card);
+            if(c.addAnimal(objectAnimal)){
 
-            PainelCentral.revalidate();
-            PainelCentral.repaint();
+                JPanel card = criarCard(objectAnimal);
+                PainelCentral.add(card);
 
-            NomeAnimal.setText("");
+                PainelCentral.revalidate();
+                PainelCentral.repaint();
+
+                NomeAnimal.setText("");
+            }
         });
     }
 
