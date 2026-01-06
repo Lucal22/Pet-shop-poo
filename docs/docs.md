@@ -1364,7 +1364,6 @@ O sistema está funcional, atende todos os requisitos do trabalho prático, impl
 
 ---
 
-**Desenvolvido por**: Lucas  
 **Disciplina**: Programação Orientada a Objetos I  
 **Instituição**: Instituto Federal de Minas Gerais (IFMG)  
 **Data**: Dezembro de 2025
